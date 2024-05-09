@@ -642,7 +642,8 @@ print(best_model_file)
 # fix random seed for reproducibility
 seed = 7
 np.random.seed(seed)
-# create model
+
+# create model (가중치 저장시 모델 구조를 함께 저장하지 않았으므로 기존 모델을 다시 설계)
 print('Build LSTM RNN model ...')
 model = Sequential()
 model.add(LSTM(units=64, dropout=0.05, recurrent_dropout=0.35, return_sequences=True,input_shape = (40,1)))
