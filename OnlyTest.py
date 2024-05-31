@@ -18,8 +18,6 @@ label_to_int = {k: v for v, k in enumerate(CLASSES)}
 int_to_label = {v: k for k, v in label_to_int.items()}
 best_model_file = "./best_model_trained2.hdf5"
 MAX_PATIENT = 12
-MAX_EPOCHS = 100
-MAX_BATCH = 32
 seed = 1
 
 # Function to load file data
