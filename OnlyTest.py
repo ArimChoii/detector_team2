@@ -107,12 +107,6 @@ callbacks = [
     ModelCheckpoint(filepath=best_model_file, monitor='val_loss', verbose=1, save_best_only=True)
 ]
 
-# Evaluate model
-print(f"Model train data score: {round(model.evaluate(x_train, y_train, verbose=0)[1] * 100)}%")
-print(f"Model test data score: {round(model.evaluate(x_test, y_test, verbose=0)[1] * 100)}%")
-print(f"Model validation data score: {round(model.evaluate(x_val, y_val, verbose=0)[1] * 100)}%")
-print(f"Model unlabeled data score: {round(model.evaluate(test_x, test_y, verbose=0)[1] * 100)}%")
-
 # Predict and plot results
 predicted_classes_label = np.argmax(model.predict(x_test), axis=1)
 
