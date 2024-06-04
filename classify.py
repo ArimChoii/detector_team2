@@ -7,31 +7,37 @@ import librosa
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QLabel, QProgressBar
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 
+
 def cosine_similarity(y_true, y_pred):
     return tf.keras.losses.cosine_similarity(y_true, y_pred)
+
 
 # 사용자 정의 객체 등록
 get_custom_objects().update({'cosine_similarity': cosine_similarity})
 
+
 def load_custom_model(model_path):
     # 모델 로드
-    model = load_model(model_path)
+    model = load_model(model_path, custom_objects={'cosine': cosine_similarity})
     return model
 
-def preprocess_wav(file_path):
+
+def preprocess_wav(file_path, duration=12, sr=16000):
     # WAV 파일 로드
-    y, sr = librosa.load(file_path, sr=16000)
-    
-    # MFCC 특징 추출
-    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40)
-    
-    # 입력 데이터의 형식을 (None, 40, 1)로 변환
-    mfcc = np.expand_dims(mfcc.T, axis=-1)
-    
+    data = []
+    input_length = sr * duration
+
+    X, sr = librosa.load(file_path, sr=sr)
+    dur = librosa.get_duration(y=X, sr=sr)
+
+    if round(dur < duration):
+        X = librosa.util.fix_length(X, size=input_length)
+    mfcc = np.mean(librosa.feature.mfcc(y=X, sr=sr, n_mfcc=40).T, axis=0)
+
+    # (40, 1) 형식으로 변환
+    mfcc = np.expand_dims(np.mean(mfcc.T, axis=0), axis=-1)
+
     return mfcc
-
-
-
 
 
 class ClassificationThread(QThread):
@@ -47,11 +53,14 @@ class ClassificationThread(QThread):
         self.progress.emit(10)  # 예시로 10% 진행
         data = preprocess_wav(self.wav_file)
         self.progress.emit(50)  # 예시로 50% 진행
-        prediction = self.model.predict(data)
+        prediction = self.model.predict(np.array([data]))
         self.progress.emit(90)  # 예시로 90% 진행
         class_idx = np.argmax(prediction)
-        self.result.emit(f"Predicted class: {class_idx}")
+        class_idx_mapping = {0: 'Artifact', 1: 'Murmur', 2: 'Normal'}
+        class_name = class_idx_mapping.get(class_idx, 'Unknown')
+        self.result.emit(f"Predicted class: {class_name}")
         self.progress.emit(100)  # 예시로 100% 진행
+
 
 class App(QWidget):
     def __init__(self):
@@ -89,7 +98,8 @@ class App(QWidget):
     def open_wav_file(self):
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select WAV File", "", "WAV Files (*.wav);;All Files (*)", options=options)
+        file_path, _ = QFileDialog.getOpenFileName(self, "Select WAV File", "", "WAV Files (*.wav);;All Files (*)",
+                                                   options=options)
         if file_path:
             self.wav_file_path = file_path
             self.label.setText(f'Selected WAV file: {file_path}')
@@ -97,7 +107,8 @@ class App(QWidget):
     def open_model_file(self):
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select Model File", "", "HDF5 Files (*.hdf5);;All Files (*)", options=options)
+        file_path, _ = QFileDialog.getOpenFileName(self, "Select Model File", "", "HDF5 Files (*.hdf5);;All Files (*)",
+                                                   options=options)
         if file_path:
             self.model_file_path = file_path
             self.label.setText(f'Selected Model file: {file_path}')
@@ -116,6 +127,7 @@ class App(QWidget):
 
     def show_result(self, result):
         self.result_label.setText(result)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
