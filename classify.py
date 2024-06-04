@@ -4,7 +4,8 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import get_custom_objects
 import numpy as np
 import librosa
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QLabel, QProgressBar
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QLabel, QProgressBar, \
+    QHBoxLayout
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 
 
@@ -66,6 +67,8 @@ class App(QWidget):
     def __init__(self):
         super().__init__()
         self.title = 'WAV File Classifier'
+        self.wav_file_path = None
+        self.model_file_path = None
         self.initUI()
 
     def initUI(self):
@@ -93,7 +96,18 @@ class App(QWidget):
         self.result_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.result_label)
 
+        self.button_confirm = QPushButton('Confirm', self)
+        self.button_confirm.clicked.connect(self.reset)
+        layout.addWidget(self.button_confirm)
+
+        self.button_exit = QPushButton('Exit', self)
+        self.button_exit.clicked.connect(self.close)
+        layout.addWidget(self.button_exit)
+
         self.setLayout(layout)
+
+        self.button_confirm.setFixedWidth(100)
+        self.button_exit.setFixedWidth(100)
 
     def open_wav_file(self):
         options = QFileDialog.Options()
@@ -128,6 +142,13 @@ class App(QWidget):
     def show_result(self, result):
         self.result_label.setText(result)
 
+    def reset(self):
+        # 초기 상태로 되돌리기
+        self.label.setText('Select a WAV file and model file to classify')
+        self.progress.setValue(0)
+        self.result_label.setText('Result will be shown here')
+        self.wav_file_path = None
+        self.model_file_path = None
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
